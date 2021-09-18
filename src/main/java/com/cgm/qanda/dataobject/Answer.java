@@ -1,9 +1,6 @@
 package com.cgm.qanda.dataobject;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
+import javax.persistence.*;
 
 @Entity
 public class Answer {
@@ -11,6 +8,7 @@ public class Answer {
     @GeneratedValue
     private Long id;
 
+    @Column(length = 256)
     private String answer;
 
     @ManyToOne

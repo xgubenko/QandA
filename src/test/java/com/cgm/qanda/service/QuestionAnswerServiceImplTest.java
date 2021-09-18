@@ -2,26 +2,20 @@ package com.cgm.qanda.service;
 
 import com.cgm.qanda.QnAApplication;
 import com.cgm.qanda.dataaccessobject.QuestionRepository;
-import com.cgm.qanda.dataobject.Answer;
-import com.cgm.qanda.dataobject.Question;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
+import static com.cgm.qanda.TestUtils.generateString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ActiveProfiles("test")
@@ -30,46 +24,64 @@ import static org.junit.Assert.assertNotNull;
 public class QuestionAnswerServiceImplTest {
 
     @Autowired
-    QuestionAnswerService service;
+    QuestionAnswerService questionAnswerService;
 
-    @Mock
-    QuestionRepository repo;
+    @Autowired
+    QuestionRepository questionRepository;
+
+    private final String QUESTION_DEFAULT_TEXT = "Question1";
+    private final String ANSWER_ONE_DEFAULT_TEXT = "Answer1";
+    private final String ANSWER_MULTIPLE_DEFAULT_TEXT = "\"answer1\"answer2\"";
 
     @Before
-    public void setup() {
-        Question question = createQuestionEntity();
-        repo.save(question);
-    }
-
-    private Question createQuestionEntity() {
-        Question question = new Question();
-        question.setQuestion("question1");
-        Answer answer = new Answer();
-        answer.setAnswer("answer1");
-        Set<Answer> set = new HashSet<>();
-        set.add(answer);
-        return question;
+    public void before() {
+        questionRepository.deleteAll();
     }
 
     @Test
-    public void testGetAnswers() {
-        Question q = createQuestionEntity();
-        Mockito.when(repo.findByQuestion("question1")).thenReturn(Optional.ofNullable(q));
-        List<String> answers = service.getAnswers("question1");
-        assertNotNull(answers);
-        assertEquals(1, answers.size());
+    public void testGetAnswersSuccess() {
+        assertEquals(0, questionRepository.findAll().size());
+
+        questionAnswerService.addQuestion(QUESTION_DEFAULT_TEXT, ANSWER_ONE_DEFAULT_TEXT);
+        List<String> answersList = questionAnswerService.getAnswers(QUESTION_DEFAULT_TEXT);
+
+        assertEquals(1, answersList.size());
+        assertEquals(ANSWER_ONE_DEFAULT_TEXT, answersList.get(0));
     }
 
     @Test
-    public void addQuestionTest() {
-        Question q = createQuestionEntity();
-        q.setQuestion("question");
-        Mockito.when(repo.save(q)).thenReturn(q);
-        Mockito.when(repo.findByQuestion("question")).thenReturn(Optional.ofNullable(q));
-        service.addQuestion("question", "answer1");
-        List<String> answers = service.getAnswers("question");
-        assertNotNull(answers);
-        assertEquals("answer1", answers.get(0));
+    public void addOneAnswerQuestionTestSuccess() {
+        assertEquals(0, questionRepository.findAll().size());
 
+        questionAnswerService.addQuestion(QUESTION_DEFAULT_TEXT, ANSWER_ONE_DEFAULT_TEXT);
+
+        assertEquals(1, questionRepository.findAll().size());
+    }
+
+    @Test
+    public void addMultipleAnswersQuestionTestSuccess() {
+        assertEquals(0, questionRepository.findAll().size());
+
+        questionAnswerService.addQuestion(QUESTION_DEFAULT_TEXT, ANSWER_MULTIPLE_DEFAULT_TEXT);
+
+        assertEquals(1, questionRepository.findAll().size());
+        assertEquals(2, questionRepository.findAll().get(0).getAnswers().size());
+    }
+
+    @Test
+    public void addLongAnswerTestFailure() {
+        assertEquals(0, questionRepository.findAll().size());
+
+        questionAnswerService.addQuestion(QUESTION_DEFAULT_TEXT, generateString(257));
+
+        assertEquals(1, questionRepository.findAll().size());
+        assertEquals(0, questionRepository.findAll().get(0).getAnswers().size());
+    }
+
+    @Test(expected = DataIntegrityViolationException.class)
+    public void addLongQuestionTestFailure() {
+        assertEquals(0, questionRepository.findAll().size());
+
+        questionAnswerService.addQuestion(generateString(257), ANSWER_ONE_DEFAULT_TEXT);
     }
 }

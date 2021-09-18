@@ -1,12 +1,6 @@
 package com.cgm.qanda.dataobject;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Version;
+import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,6 +13,7 @@ public class Question {
     @Version
     private int version;
 
+    @Column(length = 256)
     private String question;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "question", fetch = FetchType.EAGER)
@@ -71,6 +66,8 @@ public class Question {
 
     public static class QuestionBuilder {
         private Long id;
+
+        @Column(length = 256)
         private String question;
 
         public Long getId() {
